@@ -1,9 +1,10 @@
-# Tested with Julia v1.1, JSON v0.21, JuMP v0.19, Cbc v0.6
-
 using JSON
 using JuMP
 using Cbc
+using DataStructures
 
+include("./models/generator/generator.jl")
+import .Generateors: RenewableGenerator
 
 println("loading data")
 
@@ -14,9 +15,16 @@ data = JSON.parsefile(data_file)
 
 println("model building")
 
+time_periods = 1:data["time_periods"]
 thermal_gens = keys(data["thermal_generators"])
 renewable_gens = keys(data["renewable_generators"])
-time_periods = 1:data["time_periods"]
+renewable_gens = [
+    RenewableGenerator(
+        rg,
+        OrderedDict(period => min_out for (period, min_out) in enumerate(rgen["power_output_minimum"])),
+        OrderedDict(period => max_out for (period, max_out) in enumerate(rgen["power_output_maximum"]))
+    ) for (rg, rgen) in data["renewable_generators"]
+]
 
 gen_startup_categories = Dict(g => 1:length(gen["startup"]) for (g, gen) in data["thermal_generators"])
 gen_pwl_points = Dict(g => 1:length(gen["piecewise_production"]) for (g, gen) in data["thermal_generators"])
@@ -25,7 +33,7 @@ m = Model(Cbc.Optimizer)
 
 @variable(m, cg[thermal_gens, time_periods])
 @variable(m, pg[thermal_gens, time_periods] >= 0)
-@variable(m, pw[renewable_gens, time_periods] >= 0)
+@variable(m, pw[[rg.id_ for rg in renewable_gens], time_periods] >= 0)
 @variable(m, rg[thermal_gens, time_periods] >= 0)
 @variable(m, ug[thermal_gens, time_periods], binary = true)
 @variable(m, vg[thermal_gens, time_periods], binary = true)
@@ -71,7 +79,7 @@ end
 for t in time_periods
     @constraint(m,
         sum(pg[g, t] + gen["power_output_minimum"] * ug[g, t] for (g, gen) in data["thermal_generators"]) +
-        sum(pw[g, t] for g in renewable_gens)
+        sum(pw[rg.id_, t] for rg in renewable_gens)
         ==
         data["demand"][t]
     ) # (2)
@@ -117,11 +125,10 @@ for t in time_periods
         @constraint(m, ug[g, t] == sum(lambda_lg[g, l, t] for l in gen_pwl_points[g])) # (23)
     end
 
-    for (rg, rgen) in data["renewable_generators"]
-        @constraint(m, rgen["power_output_minimum"][t] <= pw[rg, t] <= rgen["power_output_maximum"][t]) # (24)
+    for rg in renewable_gens
+        @constraint(m, rg.power_output_minimum[t] <= pw[rg.id_, t] <= rg.power_output_maximum[t]) # (24)
     end
 end
-
 
 println("optimization")
 

@@ -1,8 +1,9 @@
 module Generateors
 
+include("./piecewise_production.jl")
 import .PieceWiseProductions: PieceWiseProduction
 
-struct Generator
+struct ThermalGenerator
     id_::String
     is_unit_on_t0::Bool
     is_renewable::Bool
@@ -23,5 +24,13 @@ struct Generator
     time_up_t0::Int
     time_down_t0::Int
 
+end
+
+mutable struct RenewableGenerator
+    id_::String
+
+    # 各期ごとの発電量上下限
+    power_output_minimum::Dict{Int,Float64}
+    power_output_maximum::Dict{Int,Float64}
 end
 end
