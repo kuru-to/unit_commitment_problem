@@ -9,6 +9,7 @@ DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Slack = "40bba58d-c7f1-4fe3-926e-2f246c890c3c"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
