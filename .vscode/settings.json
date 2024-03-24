@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+        "cafile",
+        "CPLEX",
+        "docplex"
+    ],
+    "python.testing.pytestArgs": [
+        "test"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
