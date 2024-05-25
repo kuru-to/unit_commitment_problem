@@ -1,10 +1,16 @@
 using JSON
 using JuMP
-using Cbc
+# using Cbc
+using CPLEX
 using DataStructures
 
 include("./models/generator/generator.jl")
 import .Generateors: RenewableGenerator
+include("./slack/slack.jl")
+import .SlackAPIs: get_slack_api, notify_mentioned, notify
+
+slack_api = get_slack_api()
+notify(slack_api, "start calculation")
 
 println("loading data")
 
@@ -29,7 +35,7 @@ renewable_gens = [
 gen_startup_categories = Dict(g => 1:length(gen["startup"]) for (g, gen) in data["thermal_generators"])
 gen_pwl_points = Dict(g => 1:length(gen["piecewise_production"]) for (g, gen) in data["thermal_generators"])
 
-m = Model(Cbc.Optimizer)
+m = Model(CPLEX.Optimizer)
 
 @variable(m, cg[thermal_gens, time_periods])
 @variable(m, pg[thermal_gens, time_periods] >= 0)
@@ -133,3 +139,5 @@ end
 println("optimization")
 
 optimize!(m)
+
+norify_mentioned(slack_api, "end calculation")
